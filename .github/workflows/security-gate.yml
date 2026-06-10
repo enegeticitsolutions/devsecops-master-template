@@ -28,8 +28,6 @@ jobs:
       - name: Install TruffleHog
         run: |
           curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh | sudo sh
-          # Add bin directory to PATH for subsequent steps
-          echo "/usr/local/bin" >> $GITHUB_PATH
 
       - name: Run TruffleHog Scan
         run: |
