@@ -1,0 +1,60 @@
+name: DevSecOps Free Security Gate
+
+on:
+  push:
+    branches:
+      - '**' # Saari branches par automatically scan chalega
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  # 1. SECRET SCANNING (Free Secret Scanner)
+  secret_scan:
+    name: Scan for API & Secret Leaks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run TruffleHog
+        uses: trufflehog/trufflehog-actions@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+
+  # 2. MALICIOUS CODE & SAST (Free Code Scanner)
+  code_scan:
+    name: Free Code Quality & Bug Scan
+    runs-on: ubuntu-latest
+    needs: secret_scan
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep OSS
+        run: |
+          python3 -m pip install semgrep
+          semgrep scan --config=auto --error
+
+  # 3. DEPENDENCY SCANNING (Free Dependency Check)
+  dependency_scan:
+    name: Third-Party Package Vulnerability Scan
+    runs-on: ubuntu-latest
+    needs: code_scan
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy FS Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          exit-code: '1' # Agar critical vulnerability mili toh PR block ho jayegi
+          severity: 'CRITICAL,HIGH'
